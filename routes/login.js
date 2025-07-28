@@ -76,6 +76,7 @@ module.exports = (db) => {
           continue;
         }
 
+
         const { _id, ...itemSansId } = item;
 
         const numeroGenere = await genererNumero();
@@ -96,6 +97,54 @@ module.exports = (db) => {
       res.status(200).json({
         success: true,
         message: `${insertedCount} inséré(s), ${updatedCount} mis à jour.`,
+        dernier: dernierInsere
+      });
+    } catch (error) {
+      console.error('❌ Erreur serveur :', error);
+      res.status(500).json({ message: 'Erreur lors du traitement' });
+    }
+  });
+
+  router.post('/envoyer_seulement', async (req, res) => {
+    try {
+      const data = req.body;
+
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ message: 'Le corps doit être un tableau' });
+      }
+
+      const collection = db.collection('login');
+
+      let insertedCount = 0;
+      let dernierInsere = null;
+
+      for (const item of data) {
+        // Ignorer tout item avec un _id
+        if (item._id) {
+          console.log(`⏭️ Ignoré (déjà existant) _id=${item._id}`);
+          continue;
+        }
+
+        const { _id, ...itemSansId } = item;
+
+        const numeroGenere = await genererNumero();
+
+        const newItem = {
+          ...itemSansId,
+          numero: numeroGenere,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const result = await collection.insertOne(newItem);
+
+        insertedCount++;
+        dernierInsere = { _id: result.insertedId, ...newItem };
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `${insertedCount} inséré(s).`,
         dernier: dernierInsere
       });
     } catch (error) {
