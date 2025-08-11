@@ -153,6 +153,42 @@ module.exports = (db) => {
     }
   });
 
+  // ...existing code...
+
+  // PUT /login/modifier : modifie un login avec _id dans le body
+  router.put('/', async (req, res) => {
+    const { _id, ...fieldsToUpdate } = req.body;
+    const { ObjectId } = require('mongodb');
+
+    if (!_id) {
+      return res.status(400).json({ message: "L'_id est requis dans le body" });
+    }
+
+    let objectId;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (e) {
+      return res.status(400).json({ message: "Format d'_id invalide" });
+    }
+
+    try {
+      const result = await collection.updateOne(
+        { _id: objectId },
+        { $set: { ...fieldsToUpdate, updatedAt: new Date() } }
+      );
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: 'Login non trouvé' });
+      }
+
+      res.json({ success: true, message: 'Modification réussie' });
+    } catch (error) {
+      res.status(500).json({ message: 'Erreur lors de la modification' });
+    }
+  });
+
+  // ...existing code...
+
 
 
   // GET /evenements
