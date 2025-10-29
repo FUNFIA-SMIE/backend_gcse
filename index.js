@@ -8,7 +8,16 @@ const devisRoutes = require('./routes/devis');
 const diagnosticRoutes = require('./routes/diagnostic');
 const interventionRoutes = require('./routes/intervention');
 const imageRoutes = require('./routes/image');
-const connexion = require('./routes/connexion')
+const connexion = require('./routes/connexion');
+const designation_devis = require('./routes/designation_devis');
+const niveau1 = require('./routes/niveau_1');
+const ouvrage_equipement = require('./routes/ouvrage_equipement');
+const compteur = require('./routes/compteur');
+const decl_token = require('./routes/decl_token');
+const historique_decl = require('./routes/historique_decl');
+const demande_token = require('./routes/demande_token');
+const historique_decl_manuel = require('./routes/historique_decl_manuel');
+
 const path = require('path');
 
 const app = express();
@@ -31,6 +40,16 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
     app.use('/devis', devisRoutes(db));
     app.use('/diagnostic', diagnosticRoutes(db));
     app.use('/intervention', interventionRoutes(db));
+    app.use('/designation_devis', designation_devis(db));
+    app.use('/niveau1', niveau1(db))
+    app.use('/ouvrage_equipement', ouvrage_equipement(db));
+    app.use('/compteur', compteur(db));
+    app.use('/decl_token', decl_token(db));
+    app.use('/historique_decl', historique_decl(db));
+    app.use('/demande_token', demande_token(db));
+    app.use('/historique_decl_manuel', historique_decl_manuel(db));
+
+
     app.use('/images', imageRoutes);
     app.use('/connexion', connexion);
 
