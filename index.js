@@ -17,6 +17,7 @@ const decl_token = require('./routes/decl_token');
 const historique_decl = require('./routes/historique_decl');
 const demande_token = require('./routes/demande_token');
 const historique_decl_manuel = require('./routes/historique_decl_manuel');
+const delete_ = require('./routes/delete');
 
 const path = require('path');
 
@@ -48,7 +49,7 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
     app.use('/historique_decl', historique_decl(db));
     app.use('/demande_token', demande_token(db));
     app.use('/historique_decl_manuel', historique_decl_manuel(db));
-
+    app.use('/delete', delete_(db));
 
     app.use('/images', imageRoutes);
     app.use('/connexion', connexion);
