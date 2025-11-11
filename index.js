@@ -20,6 +20,7 @@ const historique_decl_manuel = require('./routes/historique_decl_manuel');
 const delete_ = require('./routes/delete');
 
 const path = require('path');
+const inspection = require('./routes/inspection');
 
 const app = express();
 app.use(cors());
@@ -50,6 +51,8 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
     app.use('/demande_token', demande_token(db));
     app.use('/historique_decl_manuel', historique_decl_manuel(db));
     app.use('/delete', delete_(db));
+    app.use('/inspection', inspection(db));
+
 
     app.use('/images', imageRoutes);
     app.use('/connexion', connexion);
