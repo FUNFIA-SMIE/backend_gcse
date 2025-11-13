@@ -39,7 +39,11 @@ MONGO_URI = process.env.MONGO_URI;
 
 const DB_NAME = 'sync'; // à adapter avec le vrai nom
 
-MongoClient.connect(MONGO_URI, { tlsAllowInvalidCertificates: true })
+MongoClient.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  tlsAllowInvalidCertificates: true, // 🔑 contourne l’erreur SSL temporairement
+  })
   .then(client => {
     const db = client.db(DB_NAME);
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
