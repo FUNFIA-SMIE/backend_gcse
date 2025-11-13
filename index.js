@@ -34,10 +34,11 @@ app.use(express.json());
 const PORT = 3000;
 //const MONGO_URI = 'mongodb://localhost:27017'; // ou ton URI MongoDB
 //MONGO_URI = 'mongodb+srv://nandriamihoatra_db_user:kHC7D1SoSkxyQz2B@cluster0.lskxmtq.mongodb.net/'
-MONGO_URI='mongodb+srv://nandriamihoatra_db_user:kHC7D1SoSkxyQz2B@cluster0.lskxmtq.mongodb.net/ma_base?retryWrites=true&w=majority&tls=true'
+MONGO_URI = `mongodb+srv://nandriamihoatra_db_user:kHC7D1SoSkxyQz2B@cluster0.lskxmtq.mongodb.net/ma_base?retryWrites=true&w=majority&tls=true`
 const DB_NAME = 'sync'; // à adapter avec le vrai nom
 
-MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
+//MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
+MongoClient.connect(MONGO_URI)
   .then(client => {
     const db = client.db(DB_NAME);
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -69,12 +70,12 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
           console.log(`Serveur démarré sur http://localhost:${PORT}`);
         });
         */
-app.use(express.static(path.join(__dirname, 'public')));
+    app.use(express.static(path.join(__dirname, 'public')));
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
     });
-    
+
 
 
 
