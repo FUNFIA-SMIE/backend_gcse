@@ -40,9 +40,10 @@ MONGO_URI = process.env.MONGO_URI;
 const DB_NAME = 'sync'; // à adapter avec le vrai nom
 
 MongoClient.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  tlsAllowInvalidCertificates: true, // 🔑 contourne l’erreur SSL temporairement
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  retryWrites: true,
+  w: 'majority'
   })
   .then(client => {
     const db = client.db(DB_NAME);
