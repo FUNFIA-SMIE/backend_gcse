@@ -30,14 +30,14 @@ module.exports = (db) => {
         return `${compteurStr}/${prefix}/${suffix}`;
     }
 
-   async function generate_number() {
-       // Compute the next numeric id by finding the current max 'id' in the MongoDB collection.
-       // Assumes documents may have an 'id' field that can be parsed as a number.
-       const docs = await collection.find({}, { projection: { id: 1 } }).sort({ id: -1 }).limit(1).toArray();
-       if (docs.length === 0) return 1;
-       const maxId = Number(docs[0].id) || 0;
-       return maxId + 1;
-   }
+    async function generate_number() {
+        // Compute the next numeric id by finding the current max 'id' in the MongoDB collection.
+        // Assumes documents may have an 'id' field that can be parsed as a number.
+        const docs = await collection.find({}, { projection: { id: 1 } }).sort({ id: -1 }).limit(1).toArray();
+        if (docs.length === 0) return 1;
+        const maxId = Number(docs[0].id) || 0;
+        return maxId + 1;
+    }
 
     const { ObjectId } = require('mongodb');
     router.post('/', async (req, res) => {
@@ -106,6 +106,7 @@ module.exports = (db) => {
                     /*
                     numero: await genererNumero(),
                     ancien_numero: itemSansId.numero || null,*/
+                    id:generate_number(),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };
