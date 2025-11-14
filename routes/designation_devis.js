@@ -103,10 +103,7 @@ module.exports = (db) => {
 
                 const newItem = {
                     ...itemSansId,
-                    /*
-                    numero: await genererNumero(),
-                    ancien_numero: itemSansId.numero || null,*/
-                    id:generate_number(),
+                    id:await generate_number(),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };
