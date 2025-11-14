@@ -24,7 +24,7 @@ const inspection = require('./routes/inspection');
 
 const app = express();
 app.use(cors({
-  origin: '*', // 🔥 pour tester — ensuite tu peux restreindre
+  origin: '*', // 🔥 pour tester — ensuite tu peux restreindred
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
