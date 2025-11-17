@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { Storage } from 'megajs';
+import multer from 'multer';
+
 const multer = require('multer');
 
 const storage = multer.memoryStorage();
