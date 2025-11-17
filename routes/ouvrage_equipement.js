@@ -4,31 +4,6 @@ module.exports = (db) => {
     const router = express.Router();
     const collection = db.collection('ouvrage_equipement');
 
-    // Génère un numero du type 0001/DEV/MMYY
-    async function genererNumero(prefix = 'DBR') {
-        const now = new Date();
-        const mois = String(now.getMonth() + 1).padStart(2, '0');
-        const annee = String(now.getFullYear()).slice(-2);
-        const suffix = `${mois}${annee}`;
-        const regex = new RegExp(`^(\\d{4})/${prefix}/${suffix}$`);
-
-        const dernier = await collection
-            .find({ numero: { $regex: regex } })
-            .sort({ numero: -1 })
-            .limit(1)
-            .toArray();
-
-        let compteur = 1;
-        if (dernier.length > 0) {
-            const match = dernier[0].numero.match(regex);
-            if (match && match[1]) {
-                compteur = parseInt(match[1], 10) + 1;
-            }
-        }
-
-        const compteurStr = String(compteur).padStart(4, '0');
-        return `${compteurStr}/${prefix}/${suffix}`;
-    }
 
    async function generate_number() {
        // Compute the next numeric id by finding the current max 'id' in the MongoDB collection.
@@ -103,9 +78,9 @@ module.exports = (db) => {
 
                 const newItem = {
                     ...itemSansId,
-                    /*
+                    
                     numero: await genererNumero(),
-                    ancien_numero: itemSansId.numero || null,*/
+                    /*ancien_numero: itemSansId.numero || null,*/
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };
