@@ -207,24 +207,8 @@ module.exports = (db) => {
                 const newItem = {
 
                     ...itemSansId,
-
-
-                    /*
-
-
-                    numero: await genererNumero(),
-
-
-                    ancien_numero: itemSansId.numero || null,*/
-
-
-                    id: generate_number(),
-
-
                     id: await generate_number(),
-
                     createdAt: new Date(),
-
                     updatedAt: new Date()
 
                 };
@@ -240,15 +224,10 @@ module.exports = (db) => {
 
 
             res.status(200).json({
-
                 success: true,
-
                 inserted: insertedCount,
-
                 updated: updatedCount,
-
                 ignored: ignoredCount,
-
                 message: `${insertedCount} inséré(s), ${updatedCount} mis à jour, ${ignoredCount} ignoré(s)`
 
             });
