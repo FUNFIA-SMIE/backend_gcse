@@ -3,16 +3,31 @@ const express = require('express');
 module.exports = (db) => {
     const router = express.Router();
     const collection = db.collection('ouvrage_equipement');
+    let currentMaxId = null; // variable globale pour suivre le max en mémoire
 
+    async function generate_number() {
+        // Si on a déjà calculé le max en mémoire, on l'utilise
+        if (currentMaxId !== null) {
+            currentMaxId++;
+            return currentMaxId;
+        }
 
-   async function generate_number() {
-       // Compute the next numeric id by finding the current max 'id' in the MongoDB collection.
-       // Assumes documents may have an 'id' field that can be parsed as a number.
-       const docs = await collection.find({}, { projection: { id: 1 } }).sort({ id: -1 }).limit(1).toArray();
-       if (docs.length === 0) return 1;
-       const maxId = Number(docs[0].id) || 0;
-       return maxId + 1;
-   }
+        // Sinon, on cherche le max existant dans la base
+        const docs = await collection.find({}, { projection: { id: 1 } })
+            .sort({ id: -1 })
+            .limit(1)
+            .toArray();
+
+        if (docs.length === 0) {
+            currentMaxId = 1;
+        } else {
+            currentMaxId = Number(docs[0].id) || 0;
+            currentMaxId++; // premier id disponible
+        }
+
+        return currentMaxId;
+    }
+
 
     const { ObjectId } = require('mongodb');
     router.post('/', async (req, res) => {
@@ -79,7 +94,7 @@ module.exports = (db) => {
                 const newItem = {
                     ...itemSansId,
                     
-                    numero: await genererNumero(),
+                    numero: await generate_number(),
                     /*ancien_numero: itemSansId.numero || null,*/
                     createdAt: new Date(),
                     updatedAt: new Date()

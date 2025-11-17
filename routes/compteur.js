@@ -1,7 +1,16 @@
-const express = require('express');
+import { Router } from 'express';
+import { Storage } from 'megajs';
+const multer = require('multer');
 
-module.exports = (db) => {
-  const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// MEGA credentials (à sécuriser via variables d'environnement)
+const MEGA_EMAIL = process.env.MEGA_EMAIL;
+const MEGA_PASSWORD = process.env.MEGA_PASSWORD;
+
+export default (db) => {
+  const router = Router();
   const collection = db.collection('compteur');
 
   // Génère un numero du type 0001/DEV/MMYY
@@ -93,6 +102,41 @@ module.exports = (db) => {
       }
     });
     */
+
+  router.post('/photo', upload.single('photo'), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: 'Aucune photo reçue' });
+
+      const { originalname, buffer } = req.file;
+
+      // Upload vers MEGA
+      const megaFile = await uploadToMega(buffer, originalname);
+
+      // Enregistrer le nom et éventuellement le lien dans MongoDB
+      const collection = req.app.locals.db.collection('compteur');
+
+      const newDoc = {
+        photoName: megaFile.filename,
+        photoLink: megaFile.link,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        // Ajoute ici les autres champs envoyés depuis Angular
+        ...req.body
+      };
+
+      const result = await collection.insertOne(newDoc);
+
+      res.status(200).json({
+        success: true,
+        message: 'Photo uploadée sur MEGA et enregistrée dans MongoDB',
+        data: { _id: result.insertedId, ...newDoc }
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: 'Erreur serveur lors de l\'upload MEGA' });
+    }
+  });
 
   router.post('/', async (req, res) => {
     try {
