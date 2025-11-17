@@ -3,9 +3,8 @@ const express = require('express');
 module.exports = (db) => {
     const router = express.Router();
     const collection = db.collection('designation_devis');
-    const { ObjectId } = require('mongodb');
 
-    // --- Génération numéro ---
+    // Génère un numero du type 0001/DEV/MMYY
     async function genererNumero(prefix = 'DBR') {
         const now = new Date();
         const mois = String(now.getMonth() + 1).padStart(2, '0');
@@ -27,24 +26,20 @@ module.exports = (db) => {
             }
         }
 
-        return `${String(compteur).padStart(4, '0')}/${prefix}/${suffix}`;
+        const compteurStr = String(compteur).padStart(4, '0');
+        return `${compteurStr}/${prefix}/${suffix}`;
     }
 
-    // --- Génère un id numérique auto-incrémenté ---
     async function generate_number() {
-        const docs = await collection.find({}, { projection: { id: 1 } })
-            .sort({ id: -1 })
-            .limit(1)
-            .toArray();
-
+        // Compute the next numeric id by finding the current max 'id' in the MongoDB collection.
+        // Assumes documents may have an 'id' field that can be parsed as a number.
+        const docs = await collection.find({}, { projection: { id: 1 } }).sort({ id: -1 }).limit(1).toArray();
         if (docs.length === 0) return 1;
         const maxId = Number(docs[0].id) || 0;
         return maxId + 1;
     }
 
-    // ---------------------------------------------------
-    //                     POST SYNC
-    // ---------------------------------------------------
+    const { ObjectId } = require('mongodb');
     router.post('/', async (req, res) => {
         try {
             const data = req.body;
@@ -53,57 +48,37 @@ module.exports = (db) => {
                 return res.status(400).json({ message: 'Le corps doit être un tableau' });
             }
 
+            const collection = db.collection('designation_devis');
+
             let insertedCount = 0;
             let updatedCount = 0;
             let ignoredCount = 0;
 
-            for (let item of data) {
-
-                // 🔧 Normalisation du champ _id (si reçu au format {_id: {$oid: "xxx"}})
-                if (item._id && typeof item._id === 'object') {
-                    if (item._id.$oid) {
-                        item._id = item._id.$oid;
-                    } else {
-                        item._id = String(item._id);
-                    }
-                }
-
-                // ---------------------------------------------------
-                //           🔁 CAS 1 : DOCUMENT EXISTANT
-                // ---------------------------------------------------
+            for (const item of data) {
                 if (item._id) {
+                    const { _id, ...itemSansId } = item;
 
-                    // Vérification validité ObjectId
-                    if (!ObjectId.isValid(item._id)) {
-                        console.warn(`⚠️ _id invalide, update ignoré : ${item._id}`);
-                        ignoredCount++;
+                    let objectId;
+                    try {
+                        objectId = new ObjectId(_id);
+                    } catch (e) {
+                        console.warn(`⚠️ _id invalide ignoré: ${_id}`);
                         continue;
                     }
 
-                    const objectId = new ObjectId(item._id);
                     const existing = await collection.findOne({ _id: objectId });
 
                     if (!existing) {
-                        console.warn(`❌ _id introuvable, update ignoré : ${item._id}`);
-                        ignoredCount++;
+                        console.warn(`❌ Document avec _id=${_id} introuvable.`);
                         continue;
                     }
 
-                    // Vérification updatedAt
                     const incomingDate = new Date(item.updatedAt);
                     const existingDate = new Date(existing.updatedAt);
 
-                    if (isNaN(incomingDate.getTime())) {
-                        console.warn(`⚠️ updatedAt invalide, update ignoré pour ${item._id}`);
-                        ignoredCount++;
-                        continue;
-                    }
-
-                    // Mise à jour uniquement si plus récent
+                    // 🔁 Comparer les updatedAt
                     if (incomingDate > existingDate) {
-                        const { _id, ...itemSansId } = item;
-
-                        await collection.updateOne(
+                        const result = await collection.updateOne(
                             { _id: objectId },
                             {
                                 $set: {
@@ -113,52 +88,49 @@ module.exports = (db) => {
                             }
                         );
 
-                        console.log(`🔄 Mise à jour : ${item._id}`);
+                        console.log(`✅ Mise à jour _id=${_id}`);
                         updatedCount++;
                     } else {
-                        console.log(`⏩ Ignoré (plus ancien) : ${item._id}`);
+                        console.log(`⏩ Ignoré _id=${_id} → base plus récente ou identique`);
                         ignoredCount++;
                     }
 
-                    continue; // ⛔️ Empêche insertion
+                    continue;
                 }
 
-                // ---------------------------------------------------
-                //           ➕ CAS 2 : INSERTION
-                // ---------------------------------------------------
+                // ➕ INSERTION (nouveau document sans _id)
                 const { _id, ...itemSansId } = item;
 
                 const newItem = {
                     ...itemSansId,
-                    id: await generate_number(),
+                    id:await generate_number(),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };
 
-                await collection.insertOne(newItem);
+                const result = await collection.insertOne(newItem);
                 insertedCount++;
-
             }
 
-            return res.status(200).json({
+            res.status(200).json({
                 success: true,
                 inserted: insertedCount,
                 updated: updatedCount,
                 ignored: ignoredCount,
                 message: `${insertedCount} inséré(s), ${updatedCount} mis à jour, ${ignoredCount} ignoré(s)`
             });
-
         } catch (error) {
             console.error('❌ Erreur serveur :', error);
             res.status(500).json({ message: 'Erreur lors du traitement' });
         }
     });
 
-    // ---------------------------------------------------
-    //                    GET ALL
-    // ---------------------------------------------------
+
+
+    // GET /evenements
     router.get('/', async (req, res) => {
         try {
+            const collection = db.collection('designation_devis');
             const data = await collection.find({}).toArray();
             res.json(data);
         } catch (error) {
