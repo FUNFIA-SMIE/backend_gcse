@@ -31,7 +31,7 @@ module.exports = (db) => {
     }
 
     const { ObjectId } = require('mongodb');
-    
+
     router.post('/', async (req, res) => {
         try {
             const data = req.body;
@@ -87,6 +87,13 @@ module.exports = (db) => {
                         ignoredCount++;
                     }
 
+                    continue;
+                }
+
+
+                const existing_ = await collection.findOne({ id: item.id });
+                if (existing_) {
+                    console.warn(`❌ Document avec _id=${_id} existe déjà. Ignoré.`);
                     continue;
                 }
 
