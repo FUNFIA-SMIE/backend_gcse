@@ -18,6 +18,11 @@ const historique_decl = require('./routes/historique_decl');
 const demande_token = require('./routes/demande_token');
 const historique_decl_manuel = require('./routes/historique_decl_manuel');
 const delete_ = require('./routes/delete');
+const dasbf = require('./routes/dasbf');
+const dsscit = require('./routes/dsscit');
+const dsshp = require('./routes/dsshp');  
+
+
 
 const path = require('path');
 const inspection = require('./routes/inspection');
@@ -59,8 +64,9 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
     app.use('/historique_decl_manuel', historique_decl_manuel(db));
     app.use('/delete', delete_(db));
     app.use('/inspection', inspection(db));
-
-
+    app.use('/dsscit', dsscit(db));
+    app.use('/dasbf', dasbf(db));
+    app.use('/dsshp', dsshp(db));
     app.use('/images', imageRoutes);
     app.use('/connexion', connexion);
 
@@ -70,12 +76,12 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
           console.log(`Serveur démarré sur http://localhost:${PORT}`);
         });
         */
-app.use(express.static(path.join(__dirname, 'public')));
+    app.use(express.static(path.join(__dirname, 'public')));
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
     });
-    
+
 
 
 
