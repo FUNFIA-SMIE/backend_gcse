@@ -73,7 +73,7 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
 
     /*
         app.listen(PORT, () => {
-          console.log(`Serveur démarré sur http://localhost:${PORT}`);
+          console.log(`Serveur démarré sur http://localhost:${PORT}`);s
         });
         */
     app.use(express.static(path.join(__dirname, 'public')));
