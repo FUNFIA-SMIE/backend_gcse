@@ -47,7 +47,7 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
   .then(client => {
     const db = client.db(DB_NAME);
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-    // ✅ Injecte `db`ll
+    // ✅ Injecte `db`lls
     app.use('/evenements', evenementsRoutes(db));
     app.use('/branchements', branchementsRoutes(db));
     app.use('/login', loginRoutes(db));
