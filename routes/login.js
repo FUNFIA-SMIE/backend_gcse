@@ -3,8 +3,9 @@ const express = require('express');
 module.exports = (db) => {
   const router = express.Router();
   const collection = db.collection('login');
+  const { ObjectId } = require('mongodb');
 
-  // Génère un numero du type 0001/DEV/MMYY
+  // Génère un numero du type 0001/GCSE/MMYY
   async function genererNumero(prefix = 'GCSE') {
     const now = new Date();
     const mois = String(now.getMonth() + 1).padStart(2, '0');
@@ -30,82 +31,7 @@ module.exports = (db) => {
     return `${compteurStr}/${prefix}/${suffix}`;
   }
 
-  const { ObjectId } = require('mongodb');
-  /*
-    router.post('/', async (req, res) => {
-      try {
-        const data = req.body;
-  
-        if (!Array.isArray(data)) {
-          return res.status(400).json({ message: 'Le corps doit être un tableau' });
-        }
-  
-        const collection = db.collection('login');
-  
-        let insertedCount = 0;
-        let updatedCount = 0;
-        let dernierInsere = null;
-  
-        for (const item of data) {
-          if (item._id) {
-            const { _id, ...itemSansId } = item;
-  
-            let objectId;
-            try {
-              objectId = new ObjectId(_id); // conversion obligatoire
-            } catch (e) {
-              console.warn(`⚠️ _id invalide ignoré: ${_id}`);
-              continue; // passe à l'élément suivant
-            }
-  
-            const updateDoc = {
-              $set: {
-                ...itemSansId,
-                updatedAt: new Date()
-              }
-            };
-  
-            const result = await collection.updateOne({ _id: objectId }, updateDoc);
-  
-            console.log(`🔄 Mise à jour _id=${_id} → matched: ${result.matchedCount}, modifié: ${result.modifiedCount}`);
-  
-            if (result.matchedCount > 0) {
-              updatedCount++;
-            }
-  
-            continue;
-          }
-  
-  
-          const { _id, ...itemSansId } = item;
-  
-          const numeroGenere = await genererNumero();
-  
-          const newItem = {
-            ...itemSansId,
-            numero: numeroGenere,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-  
-          const result = await collection.insertOne(newItem);
-  
-          insertedCount++;
-          dernierInsere = { _id: result.insertedId, ...newItem };
-        }
-  
-        res.status(200).json({
-          success: true,
-          message: `${insertedCount} inséré(s), ${updatedCount} mis à jour.`,
-          dernier: dernierInsere
-        });
-      } catch (error) {
-        console.error('❌ Erreur serveur :', error);
-        res.status(500).json({ message: 'Erreur lors du traitement' });
-      }
-    });
-  */
-
+  // POST /login - Insertion et mise à jour
   router.post('/', async (req, res) => {
     try {
       const data = req.body;
@@ -118,6 +44,8 @@ module.exports = (db) => {
       let updatedCount = 0;
       let dernierInsere = null;
       let dernierModifie = null;
+
+      console.log(`📥 Traitement de ${data.length} éléments...`);
 
       for (const item of data) {
         if (item._id) {
@@ -132,6 +60,16 @@ module.exports = (db) => {
             continue;
           }
 
+          // Vérifier si le document existe
+          const existing = await collection.findOne({ _id: objectId });
+          
+          if (!existing) {
+            console.warn(`⚠️ Document non trouvé pour _id=${_id}`);
+            continue;
+          }
+
+          console.log(`🔍 Avant MAJ _id=${_id}:`, existing.username);
+
           const updateDoc = {
             $set: {
               ...itemSansId,
@@ -139,19 +77,22 @@ module.exports = (db) => {
             }
           };
 
-          const result = await collection.updateOne({ _id: objectId }, updateDoc);
+          const result = await collection.updateOne(
+            { _id: objectId }, 
+            updateDoc
+          );
 
           console.log(`🔄 Mise à jour _id=${_id} → matched: ${result.matchedCount}, modifié: ${result.modifiedCount}`);
 
           if (result.matchedCount > 0) {
             updatedCount++;
-            dernierModifie = { _id: _id, ...itemSansId }; // ✅ Stocker le dernier modifié
-          } else {
-            console.warn(`⚠️ Document non trouvé pour _id=${_id}`);
+            
+            // Récupérer le document mis à jour
+            const updated = await collection.findOne({ _id: objectId });
+            console.log(`✅ Après MAJ _id=${_id}:`, updated.username);
+            
+            dernierModifie = updated;
           }
-
-          // ✅ ENLEVER le continue ou le remplacer par :
-          // continue; 
 
         } else {
           // === INSERTION ===
@@ -170,16 +111,23 @@ module.exports = (db) => {
 
           insertedCount++;
           dernierInsere = { _id: result.insertedId, ...newItem };
+          
+          console.log(`✅ Inséré avec _id=${result.insertedId}`);
         }
       }
 
-      res.status(200).json({
+      const response = {
         success: true,
         message: `${insertedCount} inséré(s), ${updatedCount} mis à jour.`,
         inserted: insertedCount,
         updated: updatedCount,
-        dernier: dernierInsere || dernierModifie // ✅ Retourner soit l'insertion soit la MAJ
-      });
+        dernier: dernierInsere || dernierModifie
+      };
+
+      console.log(`📤 Réponse:`, response.message);
+
+      res.status(200).json(response);
+      
     } catch (error) {
       console.error('❌ Erreur serveur :', error);
       res.status(500).json({
@@ -188,6 +136,8 @@ module.exports = (db) => {
       });
     }
   });
+
+  // POST /login/envoyer_seulement - Insertion uniquement
   router.post('/envoyer_seulement', async (req, res) => {
     try {
       const data = req.body;
@@ -196,7 +146,8 @@ module.exports = (db) => {
         return res.status(400).json({ message: 'Le corps doit être un tableau' });
       }
 
-      const collection = db.collection('login');
+      // ❌ SUPPRIMER cette redéfinition
+      // const collection = db.collection('login');
 
       let insertedCount = 0;
       let dernierInsere = null;
@@ -236,12 +187,9 @@ module.exports = (db) => {
     }
   });
 
-  // ...existing code...
-
-  // PUT /login/modifier : modifie un login avec _id dans le body
+  // PUT /login - Modification d'un login par _id
   router.put('/', async (req, res) => {
     const { _id, ...fieldsToUpdate } = req.body;
-    const { ObjectId } = require('mongodb');
 
     if (!_id) {
       return res.status(400).json({ message: "L'_id est requis dans le body" });
@@ -264,24 +212,27 @@ module.exports = (db) => {
         return res.status(404).json({ message: 'Login non trouvé' });
       }
 
-      res.json({ success: true, message: 'Modification réussie' });
+      res.json({ 
+        success: true, 
+        message: 'Modification réussie',
+        modified: result.modifiedCount
+      });
     } catch (error) {
+      console.error('❌ Erreur PUT:', error);
       res.status(500).json({ message: 'Erreur lors de la modification' });
     }
   });
 
-  // ...existing code...
-
-
-
-  // GET /evenements
+  // GET /login - Récupérer tous les logins
   router.get('/', async (req, res) => {
     try {
-      const collection = db.collection('login');
+      // ❌ SUPPRIMER cette redéfinition
+      // const collection = db.collection('login');
+      
       const data = await collection.find({}).toArray();
       res.json(data);
     } catch (error) {
-      console.error(error);
+      console.error('❌ Erreur GET:', error);
       res.status(500).json({ message: 'Erreur lors de la lecture' });
     }
   });
