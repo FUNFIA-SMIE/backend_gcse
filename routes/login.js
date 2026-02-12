@@ -31,7 +31,7 @@ module.exports = (db) => {
   }
 
   const { ObjectId } = require('mongodb');
-
+/*
   router.post('/', async (req, res) => {
     try {
       const data = req.body;
@@ -104,6 +104,87 @@ module.exports = (db) => {
       res.status(500).json({ message: 'Erreur lors du traitement' });
     }
   });
+*/
+
+router.post('/', async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!Array.isArray(data)) {
+      return res.status(400).json({ message: 'Le corps doit être un tableau' });
+    }
+
+    // ❌ SUPPRIMER CETTE LIGNE (redéfinition inutile)
+    // const collection = db.collection('login');
+
+    let insertedCount = 0;
+    let updatedCount = 0;
+    let dernierInsere = null;
+    let dernierModifie = null;
+
+    for (const item of data) {
+      if (item._id) {
+        // === MISE À JOUR ===
+        const { _id, ...itemSansId } = item;
+
+        let objectId;
+        try {
+          objectId = new ObjectId(_id);
+        } catch (e) {
+          console.warn(`⚠️ _id invalide ignoré: ${_id}`);
+          continue;
+        }
+
+        const updateDoc = {
+          $set: {
+            ...itemSansId,
+            updatedAt: new Date()
+          }
+        };
+
+        const result = await collection.updateOne({ _id: objectId }, updateDoc);
+
+        console.log(`🔄 Mise à jour _id=${_id} → matched: ${result.matchedCount}, modifié: ${result.modifiedCount}`);
+
+        if (result.matchedCount > 0) {
+          updatedCount++;
+          dernierModifie = { _id: objectId, ...itemSansId }; // Stocker le dernier modifié
+        } else {
+          console.warn(`⚠️ Aucun document trouvé pour _id=${_id}`);
+        }
+
+        // ❌ SUPPRIMER ce continue ou gérer différemment
+        // continue; 
+      } else {
+        // === INSERTION ===
+        const { _id, ...itemSansId } = item;
+
+        const numeroGenere = await genererNumero();
+
+        const newItem = {
+          ...itemSansId,
+          numero: numeroGenere,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const result = await collection.insertOne(newItem);
+
+        insertedCount++;
+        dernierInsere = { _id: result.insertedId, ...newItem };
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${insertedCount} inséré(s), ${updatedCount} mis à jour.`,
+      dernier: dernierInsere || dernierModifie // Retourner le dernier élément traité
+    });
+  } catch (error) {
+    console.error('❌ Erreur serveur :', error);
+    res.status(500).json({ message: 'Erreur lors du traitement', error: error.message });
+  }
+});
 
   router.post('/envoyer_seulement', async (req, res) => {
     try {
